@@ -1,19 +1,40 @@
 // Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron')
+const {app, BrowserWindow, BrowserView} = require('electron')
 const path = require('path')
+
+const APPLY_BROWSER_VIEW_FIX = false;
 
 function createWindow () {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
+    height: 600
   })
 
+  const mainView = new BrowserView({
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  });
+
+  mainWindow.setBrowserView(mainView);
+  mainView.setBounds({
+    x: 0,
+    y: 0,
+    width: 800,
+    height: 600,
+  });
+
   // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
+  mainView.webContents.loadFile('index.html')
+
+  if(APPLY_BROWSER_VIEW_FIX) {
+    app.on("before-quit", () => {
+      mainWindow.setBrowserView(null);
+    });
+  }
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools()
@@ -36,7 +57,7 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin') app.quit();
 })
 
 // In this file you can include the rest of your app's specific main process
